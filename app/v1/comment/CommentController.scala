@@ -10,7 +10,7 @@ import play.api.mvc._
 
 import scala.concurrent.{ExecutionContext, Future}
 
-case class CommentInput(referenceUuid: String, authorName: String, email: String, content: String)
+case class CommentInput(referenceUuid: String, referenceType: String, authorName: String, email: String, content: String)
 
 class CommentController @Inject()(cc: ControllerComponents, handler: CommentResourceHandler)(implicit ec: ExecutionContext)
   extends AbstractController(cc) with I18nSupport {
@@ -21,6 +21,7 @@ class CommentController @Inject()(cc: ControllerComponents, handler: CommentReso
     Form(
       mapping(
         "referenceUuid" -> nonEmptyText,
+        "referenceType" -> nonEmptyText,
         "authorName" -> nonEmptyText,
         "email" -> nonEmptyText,
         "content" -> nonEmptyText

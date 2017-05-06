@@ -7,7 +7,7 @@ import pl.why.comment.proto.Comment
 import v1.comment.command.CommentEntity.Command.{CreateComment, PublishComment}
 import v1.comment.command.CommentEntity.Event.{CommentCreated, CommentPublished}
 
-case class CommentData(uuid: String, referenceUuid: String, authorName: String, email: String, content: String,
+case class CommentData(uuid: String, referenceUuid: String, referenceType: String, authorName: String, email: String, content: String,
                        createdOn: Long = System.currentTimeMillis(), published: Boolean = false, deleted: Boolean = false)
   extends EntityFieldsObject[String, CommentData] {
 
@@ -19,7 +19,7 @@ case class CommentData(uuid: String, referenceUuid: String, authorName: String, 
 }
 
 object CommentData {
-  lazy val empty = CommentData("", "", "", "", "", 0L)
+  lazy val empty = CommentData("", "", "", "", "", "", 0L)
 }
 
 object CommentEntity {
@@ -49,7 +49,7 @@ object CommentEntity {
     case class CommentCreated(c: CommentData) extends CommentEvent {
       override def toDataModel: Comment.CommentCreated = {
         Comment.CommentCreated(
-          Some(Comment.Comment(c.uuid, c.referenceUuid, c.authorName, c.email, c.content, c.createdOn, c.published, c.deleted)))
+          Some(Comment.Comment(c.uuid, c.referenceUuid, c.referenceType, c.authorName, c.email, c.content, c.createdOn, c.published, c.deleted)))
       }
     }
 
@@ -57,7 +57,7 @@ object CommentEntity {
       def fromDataModel: PartialFunction[GeneratedMessage, CommentCreated] = {
         case cc: Comment.CommentCreated =>
           val c = cc.comment.get
-          CommentCreated(CommentData(c.uuid, c.referenceUuid, c.authorName, c.email, c.content, c.createdOn, c.published, c.deleted))
+          CommentCreated(CommentData(c.uuid, c.referenceUuid, c.referenceType, c.authorName, c.email, c.content, c.createdOn, c.published, c.deleted))
       }
     }
 
@@ -106,4 +106,18 @@ class CommentEntity extends PersistentEntity[CommentData] {
     case CommentPublished(_) =>
       state = state.copy(published = true)
   }
+}
+
+private[order] object CommentCreateValidator {
+
+  import SalesOrder._
+
+  def props = Props[CommentCreateValidator]
+
+  sealed trait State
+  case object WaitingForRequest extends State
+  case object ResolvingDependencies extends State
+  case object LookingUpEntities extends State
+
+
 }
