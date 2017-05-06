@@ -1,0 +1,22 @@
+syntax = "proto3";
+option java_package = "pl.why.comment.proto";
+option optimize_for = SPEED;
+
+message Comment {
+    string uuid = 1;
+    string referenceUuid = 2;
+    string authorName = 3;
+    string email = 4;
+    string content = 5;
+    int64 createdOn = 6;
+    bool published = 7;
+    bool deleted = 8;
+}
+
+message CommentCreated {
+    Comment comment = 1;
+}
+
+message CommentPublished {
+    string uuid = 1;
+}
