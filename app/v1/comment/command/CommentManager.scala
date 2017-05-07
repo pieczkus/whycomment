@@ -25,7 +25,7 @@ class CommentManager extends Aggregate[CommentData, CommentEntity] {
   override def receive: Receive = {
     case AddComment(input) =>
       val uuid = UUID.randomUUID().toString
-      val comment = CommentData(uuid, input.referenceUuid, input.authorName, input.email, input.content)
+      val comment = CommentData(uuid, input.referenceUuid, input.referenceType, input.authorName, input.email, input.content)
       forwardCommand(uuid, CreateComment(comment))
 
     case AcceptComment(commentUuid) =>

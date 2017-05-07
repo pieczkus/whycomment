@@ -1,11 +1,16 @@
 package v1.comment.command
 
-import akka.actor.Props
+import akka.actor.{ActorRef, FSM, Props}
 import com.trueaccord.scalapb.GeneratedMessage
 import pl.why.common._
 import pl.why.comment.proto.Comment
+import pl.why.common.lookup.{ServiceConsumer, ServiceLookupResult}
+import v1.comment.command.CommentCreateValidator._
 import v1.comment.command.CommentEntity.Command.{CreateComment, PublishComment}
 import v1.comment.command.CommentEntity.Event.{CommentCreated, CommentPublished}
+import v1.comment.query.CommentJsonProtocol
+
+import scala.concurrent.duration._
 
 case class CommentData(uuid: String, referenceUuid: String, referenceType: String, authorName: String, email: String, content: String,
                        createdOn: Long = System.currentTimeMillis(), published: Boolean = false, deleted: Boolean = false)
@@ -108,9 +113,7 @@ class CommentEntity extends PersistentEntity[CommentData] {
   }
 }
 
-private[order] object CommentCreateValidator {
-
-  import SalesOrder._
+private[comment] object CommentCreateValidator {
 
   def props = Props[CommentCreateValidator]
 
@@ -119,5 +122,61 @@ private[order] object CommentCreateValidator {
   case object ResolvingDependencies extends State
   case object LookingUpEntities extends State
 
+  sealed trait Data{
+    def inputs:Inputs
+  }
+  case object NoData extends Data{
+    def inputs = Inputs(ActorRef.noSender, null)
+  }
+  case class Inputs(originator:ActorRef, request: CommentEntity.Command.CreateComment)
+
+  trait InputsData extends Data{
+    def inputs:Inputs
+    def originator = inputs.originator
+  }
+  case class UnresolvedDependencies(inputs:Inputs, referenceUri:Option[String] = None) extends InputsData
+
+  case class ResolvedDependencies[T](inputs:Inputs, referenced:Option[T],  referenceUri:String) extends InputsData
+
+  case class LookedUpData[T](inputs:Inputs, referenced:T) extends InputsData
+
+  val ResolveTimeout = 5.seconds
+
+  val InvalidReferenceIdError = ErrorMessage("invalid.referenceId", Some("You have supplied an invalid reference id"))
+
+}
+
+private[comment] class CommentCreateValidator extends CommonActor with FSM[CommentCreateValidator.State, CommentCreateValidator.Data]
+  with ServiceConsumer with CommentJsonProtocol {
+
+  import context.dispatcher
+  import akka.pattern.pipe
+
+  startWith(WaitingForRequest, NoData)
+
+  when(WaitingForRequest){
+    case Event(request:CreateComment, _) =>
+      lookupService(request.comment.referenceType).pipeTo(self)
+      goto(ResolvingDependencies) using UnresolvedDependencies(Inputs(sender(), request))
+  }
+
+  when(ResolvingDependencies, ResolveTimeout )(transform {
+    case Event(ServiceLookupResult(name, uriOpt), data:UnresolvedDependencies) =>
+
+      log.info("Resolved dependency {} to: {}", name, uriOpt)
+      val newData = data.copy(referenceUri = uriOpt)
+      stay using newData
+  } using{
+    case FSM.State(state, UnresolvedDependencies(inputs, Some(userUri),
+    Some(inventoryUri), Some(creditUri)), _, _, _) =>
+
+      log.info("Resolved all dependencies, looking up entities")
+      findUserByEmail(userUri, inputs.request.userEmail).pipeTo(self)
+
+      val expectedBooks = inputs.request.lineItems.map(_.bookId).toSet
+      val bookFutures = expectedBooks.map(id => findBook(inventoryUri, id))
+      bookFutures.foreach(_.pipeTo(self))
+      goto(LookingUpEntities) using ResolvedDependencies(inputs, expectedBooks, None, Map.empty, inventoryUri, userUri, creditUri)
+  })
 
 }
