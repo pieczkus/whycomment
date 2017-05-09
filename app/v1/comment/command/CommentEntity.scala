@@ -1,6 +1,7 @@
 package v1.comment.command
 
 import akka.actor.{ActorRef, FSM, Props}
+import akka.http.scaladsl.model.Uri
 import com.trueaccord.scalapb.GeneratedMessage
 import pl.why.common._
 import pl.why.comment.proto.Comment
@@ -10,6 +11,7 @@ import v1.comment.command.CommentEntity.Command.{CreateComment, PublishComment}
 import v1.comment.command.CommentEntity.Event.{CommentCreated, CommentPublished}
 import v1.comment.query.CommentJsonProtocol
 
+import scala.concurrent.Future
 import scala.concurrent.duration._
 
 case class CommentData(uuid: String, referenceUuid: String, referenceType: String, authorName: String, email: String, content: String,
@@ -167,16 +169,20 @@ private[comment] class CommentCreateValidator extends CommonActor with FSM[Comme
       val newData = data.copy(referenceUri = uriOpt)
       stay using newData
   } using{
-    case FSM.State(state, UnresolvedDependencies(inputs, Some(userUri),
-    Some(inventoryUri), Some(creditUri)), _, _, _) =>
+    case FSM.State(state, UnresolvedDependencies(inputs, Some(referenceUri)), _, _, _) =>
 
       log.info("Resolved all dependencies, looking up entities")
-      findUserByEmail(userUri, inputs.request.userEmail).pipeTo(self)
+      findReferenceEntity[](referenceUri, inputs.request.comment.referenceUuid).pipeTo(self)
 
       val expectedBooks = inputs.request.lineItems.map(_.bookId).toSet
       val bookFutures = expectedBooks.map(id => findBook(inventoryUri, id))
       bookFutures.foreach(_.pipeTo(self))
       goto(LookingUpEntities) using ResolvedDependencies(inputs, expectedBooks, None, Map.empty, inventoryUri, userUri, creditUri)
   })
+
+  def findReferenceEntity[T](referenceUri:String, referenceUuid:String):Future[T] = {
+    val requestUri = Uri(requestUri).withPath(Uri.Path("/api") / "user" / email)
+    executeHttpRequest[BookstoreUser](HttpRequest(HttpMethods.GET, requestUri))
+  }
 
 }

@@ -17,7 +17,7 @@ lazy val root = (project in file("."))
   .settings(inConfig(GatlingTest)(Defaults.testSettings): _*)
   .settings(PB.protoSources in Compile += baseDirectory.value / "protobuf")
   .settings(
-    name := """why-common""",
+    name := """why-comment""",
     scalaSource in GatlingTest := baseDirectory.value / "/gatling/simulation",
     //TODO: remove after akka-persistence-cassandra bump
     libraryDependencies += "com.datastax.cassandra"  % "cassandra-driver-core" % "3.2.0",
