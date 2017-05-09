@@ -6,6 +6,6 @@ import v1.comment.query.CommentViewBuilder.CommentRM
 
 trait CommentJsonProtocol extends BaseJsonProtocol {
 
-  implicit val warehouseRmFormat: RootJsonFormat[CommentRM] = jsonFormat6(CommentRM.apply)
+  implicit val commentRmFormat: RootJsonFormat[CommentRM] = jsonFormat6(CommentRM.apply)
 
 }

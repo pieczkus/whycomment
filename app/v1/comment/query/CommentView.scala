@@ -32,7 +32,7 @@ object CommentViewBuilder {
 
 class CommentViewBuilder @Inject()(@Named("resumable-projection-manager") rpm: ActorRef)
   extends ViewBuilder[CommentViewBuilder.CommentRM](rpm) with CommentReadModel with CommentJsonProtocol {
-  override implicit val rmFormats: JsonFormat[CommentViewBuilder.CommentRM] = warehouseRmFormat
+  override implicit val rmFormats: JsonFormat[CommentViewBuilder.CommentRM] = commentRmFormat
 
   override def projectionId: String = CommentViewBuilder.Name
 
