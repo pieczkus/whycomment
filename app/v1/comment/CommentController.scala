@@ -10,10 +10,12 @@ import play.api.mvc._
 
 import scala.concurrent.{ExecutionContext, Future}
 
-case class CommentInput(referenceUuid: String, referenceType: String, authorName: String, email: String, content: String)
+case class CommentInput(referenceUuid: String, authorName: String, email: String, content: String)
 
 class CommentController @Inject()(cc: ControllerComponents, handler: CommentResourceHandler)(implicit ec: ExecutionContext)
   extends AbstractController(cc) with I18nSupport {
+
+  private final val API_KEY_HEADER = "Why-Key"
 
   private lazy val form: Form[CommentInput] = {
     import play.api.data.Forms._
@@ -21,7 +23,6 @@ class CommentController @Inject()(cc: ControllerComponents, handler: CommentReso
     Form(
       mapping(
         "referenceUuid" -> nonEmptyText,
-        "referenceType" -> nonEmptyText,
         "authorName" -> nonEmptyText,
         "email" -> nonEmptyText,
         "content" -> nonEmptyText
@@ -46,7 +47,7 @@ class CommentController @Inject()(cc: ControllerComponents, handler: CommentReso
     }
 
     def success(input: CommentInput) = {
-      handler.create(input).map {
+      handler.create(request.headers(API_KEY_HEADER), input).map {
         case SuccessResult => Created
         case _ => BadRequest
       }

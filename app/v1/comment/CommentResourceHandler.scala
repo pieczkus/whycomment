@@ -49,8 +49,8 @@ class CommentResourceHandler @Inject()(routerProvider: Provider[CommentRouter],
     }
   }
 
-  def create(input: CommentInput): Future[ServiceResult[Any]] = {
-    (commentManager ? AddComment(input)).mapTo[ServiceResult[CommentData]].map {
+  def create(key: String, input: CommentInput): Future[ServiceResult[Any]] = {
+    (commentManager ? AddComment(key, input)).mapTo[ServiceResult[CommentData]].map {
       case FullResult(_) => SuccessResult
       case _ => EmptyResult
     }

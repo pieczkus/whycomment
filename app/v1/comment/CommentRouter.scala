@@ -11,7 +11,7 @@ class CommentRouter @Inject()(controller: CommentController) extends SimpleRoute
 
   override def routes: Routes = {
 
-    case GET(p"/$uuid") =>
+    case GET(p"/reference/$uuid") =>
       controller.find(uuid)
 
     case POST(p"/") =>

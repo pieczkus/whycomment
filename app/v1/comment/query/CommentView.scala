@@ -6,11 +6,11 @@ import akka.actor.{ActorRef, Props}
 import akka.persistence.query.EventEnvelope
 import akka.stream.ActorMaterializer
 import com.sksamuel.elastic4s.ElasticDsl.termQuery
-import pl.why.common.ViewBuilder.{InsertAction, UpdateAction}
+import pl.why.common.ViewBuilder.InsertAction
 import pl.why.common.{CommonActor, ElasticSearchSupport, ReadModelObject, ViewBuilder}
 import spray.json.JsonFormat
 import v1.comment.command.CommentEntity
-import v1.comment.command.CommentEntity.Event.{CommentCreated, CommentPublished}
+import v1.comment.command.CommentEntity.Event.CommentCreated
 import v1.comment.query.CommentViewBuilder.CommentRM
 
 trait CommentReadModel {
@@ -38,11 +38,9 @@ class CommentViewBuilder @Inject()(@Named("resumable-projection-manager") rpm: A
 
   override def actionFor(id: String, env: EventEnvelope): ViewBuilder.IndexAction = env.event match {
     case CommentCreated(c) =>
-      val rm = CommentRM(c.uuid, c.referenceUuid, c.authorName, c.content, c.createdOn, c.published)
+      val rm = CommentRM(c.uuid, c.referenceUuid, c.authorName, c.content, c.createdOn)
       InsertAction(id, rm)
 
-    case CommentPublished(_) =>
-      UpdateAction(id, Map("published" -> true))
   }
 }
 
@@ -55,6 +53,7 @@ object CommentView {
 }
 
 class CommentView extends CommonActor with ElasticSearchSupport with CommentReadModel with CommentJsonProtocol {
+
   import CommentView._
   import context.dispatcher
 

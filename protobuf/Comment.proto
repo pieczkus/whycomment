@@ -5,7 +5,7 @@ option optimize_for = SPEED;
 message Comment {
     string uuid = 1;
     string referenceUuid = 2;
-    string referenceType = 3;
+    string key = 3;
     string authorName = 4;
     string email = 5;
     string content = 6;
