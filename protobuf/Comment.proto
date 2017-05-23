@@ -18,6 +18,10 @@ message CommentCreated {
     Comment comment = 1;
 }
 
+message ValidatedCommentCreated {
+    Comment comment = 1;
+}
+
 message CommentPublished {
     string uuid = 1;
 }

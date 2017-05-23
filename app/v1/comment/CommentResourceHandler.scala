@@ -4,6 +4,7 @@ import javax.inject.{Inject, Named, Provider}
 
 import akka.actor.ActorRef
 import akka.util.Timeout
+import pl.why.common.lookup.ServiceConsumer
 import pl.why.common.{EmptyResult, FullResult, ServiceResult, SuccessResult}
 import play.api.libs.json.{JsValue, Json, Writes}
 import v1.comment.command.CommentData
@@ -33,7 +34,8 @@ object CommentResource {
 }
 
 class CommentResourceHandler @Inject()(routerProvider: Provider[CommentRouter],
-                                       @Named("comment-manager") commentManager: ActorRef, @Named("comment-view") commentView: ActorRef)
+                                       @Named("comment-manager") commentManager: ActorRef,
+                                       @Named("comment-view") commentView: ActorRef)
                                       (implicit ec: ExecutionContext) {
 
   import akka.pattern.ask
